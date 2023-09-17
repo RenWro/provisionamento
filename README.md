@@ -88,7 +88,7 @@ Ana Bea Ferraz
 
 Bruna Leal
 
-Kamilla Antunes
+Kamila Antunes
 
 Ren Wrobleski
 
