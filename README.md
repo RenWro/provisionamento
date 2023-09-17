@@ -25,7 +25,7 @@ Este projeto consiste em criar uma pilha do AWS CloudFormation para implantar um
 
 <h2>Template do CloudFormation</h2>
 
-No repositório, foi criado um arquivo chamado ecs-wordpress-stack.yml (ou outro nome de escolha) que continha o template do CloudFormation. Este arquivo definiu todos os recursos necessários para a infraestrutura.
+No repositório, foi criado um arquivo chamado ecs-wordpress-stack.yml que continha o template do CloudFormation. Este arquivo definiu todos os recursos necessários para a infraestrutura.
 
 <h2>Infraestrutura</h2>
 
