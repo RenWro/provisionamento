@@ -57,7 +57,7 @@ Foram fornecidos comentários claros no template para explicar a finalidade de c
 
 
 
-<h2>Implanração da Pilha</h2>
+<h2>Implantação da Pilha</h2>
 
 
 
