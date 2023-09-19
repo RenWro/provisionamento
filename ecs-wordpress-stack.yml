@@ -141,34 +141,6 @@ Resources:
               SourceVolume: my-vol
           PortMappings:
             - ContainerPort: 80
-        - Name: busybox
-          Cpu: 10
-          Command:
-            - >-
-              /bin/sh -c "while true; do echo '<html> <head> <title>Amazon ECS
-              Sample App</title> <style>body {margin-top: 40px;
-              background-color: #333;} </style> </head><body> <div
-              style=color:white;text-align:center> <h1>Amazon ECS Sample
-              App</h1> <h2>Congratulations!</h2> <p>Your application is now
-              running on a container in Amazon ECS.</p>' > top; /bin/date > date
-              ; echo '</div></body></html>' > bottom; cat top date bottom >
-              /usr/local/apache2/htdocs/index.html ; sleep 1; done"
-          EntryPoint:
-            - sh
-            - '-c'
-          Essential: false
-          Image: busybox
-          Memory: 200
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref CloudwatchLogsGroup
-              awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: ecs-demo-app
-          VolumesFrom:
-            - SourceContainer: simple-app
-      Volumes:
-        - Name: my-vol
   ECSALB:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
