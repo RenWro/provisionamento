@@ -1,0 +1,21 @@
+ProjectAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-ProjectAccessPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "elasticfilesystem:*"
+            Resource:
+              - "*"
+      Roles:
+        - !Ref ProjectAccessRole
+
+Outputs:
+  ProjectAccessRoleOutput:
+    Export:
+      Name: !Sub ${AWS::StackName}:ProjectAccessRole
+    Value:
+      Fn::GetAtt: [ProjectAccessRole, Arn]
