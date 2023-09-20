@@ -38,6 +38,7 @@ No template do CloudFormation, foram definidos os seguintes recursos:
 5. Configurações de dimensionamento automático para ajustar automaticamente o número de containers com base na carga.
 6. Um sistema de arquivos EFS para armazenar dados persistentes do WordPress.
 
+![new-designer](https://github.com/RenWro/provisionamento/assets/136510994/01159a2c-ca80-47ab-b6e5-dfc88685df87)
 
 
 <h2>Parâmetros</h2>
