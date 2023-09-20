@@ -1,16 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack para implantar o WordPress no Amazon ECS
 
-Resources:
-  myKeyPair:
-    Type: 'AWS::EC2::KeyPair'
-    Properties:
-      KeyName: demo
+Parameters:
   VpcId:
-    Type: 'AWS::EC2::VPC::Id'
+    Type: AWS::EC2::VPC::Id
     Description: Select a VPC that allows instances to access the Internet.
   SubnetId:
-    Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: List<AWS::EC2::Subnet::Id>
     Description: Select at least two subnets in your selected VPC.
   DesiredCapacity:
     Type: Number
@@ -78,13 +74,65 @@ Mappings:
       AMIID: ami-0b68661b29b9e058c
     ap-southeast-2:
       AMIID: ami-00e4b147599c13588
+  
+  ProjectStack:
+    Type: String
+
+  CertificateArn:
+    Type: String
+    
+Resources:
+  myKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: demo
+  EFS:
+    Type: AWS::EFS::FileSystem
+
+  EFSMountTargetSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::StackName}-EFS-MT-SG
+      GroupDescription: !Sub ${AWS::StackName} SG do EFSMountTarget
+      SecurityGroupIngress:
+        - Description: Permite trafego do ECSServiceSecurityGroup na porta 2049.
+          IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref EcsSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EFS-MT-SG
+      VpcId: !Ref VpcId
+
+  EFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFS
+      SubnetId: !Select [ 0, !Ref SubnetId ]
+      SecurityGroups:
+        - !Ref EFSMountTargetSG
+
+  EFSMountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFS
+      SubnetId: !Select [ 1, !Ref SubnetId ]
+      SecurityGroups:
+        - !Ref EFSMountTargetSG
+
+  EFSAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref EFS
+########################################
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
   EcsSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ECS Security Group
-      VpcId: !Ref 'AWS::Region'
+      VpcId: !Ref VpcId
   EcsSecurityGroupHTTPinbound:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
@@ -141,6 +189,10 @@ Mappings:
               SourceVolume: my-vol
           PortMappings:
             - ContainerPort: 80
+          Volumes:
+            - Name: my-vol
+              host:
+                sourcePath: /usr/local/apache2/htdocs
   ECSALB:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
@@ -379,16 +431,7 @@ Mappings:
       Path: /
       Roles:
         - !Ref EC2Role
-Parameters:
-
-  ProjectStack:
-    Type: String
-
-  CertificateArn:
-    Type: String
-
-Resources:
-
+        
   PublicLoadBalancerSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -416,7 +459,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the containers
-      VpcId: !Ref 'AWS::Region'
+      VpcId: !Ref VpcId
   ContainerSecurityGroupHTTPinbound:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
