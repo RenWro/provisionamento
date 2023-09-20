@@ -2,9 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack para implantar o WordPress no Amazon ECS
 
 Parameters:
-  myKeyPair:
-    Type: AWS::EC2::KeyPair
-    Description: Select a VPC that allows instances to access
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: Select a VPC that allows instances to access the Internet.
@@ -77,12 +74,20 @@ Mappings:
       AMIID: ami-0b68661b29b9e058c
     ap-southeast-2:
       AMIID: ami-00e4b147599c13588
-    
+
 Resources:
-  KeyPair:
-    Type: AWS::EC2::KeyPair
+
+  ECSALB:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
-      KeyName: demo
+      Name: ECSALB
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '30'
+      Subnets: !Ref SubnetId
+      SecurityGroups:
+        - !Ref EcsSecurityGroup
   EFS:
     Type: AWS::EFS::FileSystem
 
@@ -122,7 +127,7 @@ Resources:
     Type: AWS::EFS::AccessPoint
     Properties:
       FileSystemId: !Ref EFS
-########################################
+  ########################################
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
   EcsSecurityGroup:
@@ -182,25 +187,21 @@ Resources:
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: ecs-demo-app
           MountPoints:
-            - ContainerPath: /usr/local/apache2/htdocs
-              SourceVolume: my-vol
+            - ContainerPath: /var/www/html
+              SourceVolume: EFS
+              ReadOnly: false
           PortMappings:
             - ContainerPort: 80
-          Volumes:
-            - Name: my-vol
-              host:
-                sourcePath: /usr/local/apache2/htdocs
-  ECSALB:
-    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
-    Properties:
-      Name: ECSALB
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-        - Key: idle_timeout.timeout_seconds
-          Value: '30'
-      Subnets: !Ref SubnetId
-      SecurityGroups:
-        - !Ref EcsSecurityGroup
+              Protocol: tcp
+      Volumes:
+        - Name: EFS
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EFS
+            AuthorizationConfig:
+              AccessPointId: !Ref EFSAccessPoint
+              IAM: DISABLED
+            TransitEncryption: ENABLED
+            
   ALBListener:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     DependsOn: ECSServiceRole
@@ -231,6 +232,8 @@ Resources:
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
+      Matcher:
+        HttpCode: 200-299,302
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       Name: ECSTG
@@ -263,7 +266,6 @@ Resources:
         - !Ref EcsSecurityGroup
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref EC2InstanceProfile
-      KeyName: !Ref myKeyPair
       UserData: !Base64 
         'Fn::Join':
           - ''
@@ -438,19 +440,6 @@ Resources:
           - CidrIp: 0.0.0.0/0
             IpProtocol: -1
 
-  PublicLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
-      Subnets:
-        - !Sub ${AWS::StackName}:PublicSubnetOne
-        - !Sub ${AWS::StackName}:PublicSubnetTwo
-      SecurityGroups: [!Ref 'PublicLoadBalancerSG']
-      Type: application
-
   ContainerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -497,9 +486,6 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: 60                 
       TargetType: ip
-
-  PublicLoadBalancerListener:
-    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
 
   ProjectAccessRole:
     Type: "AWS::IAM::Role"
