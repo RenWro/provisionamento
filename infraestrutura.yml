@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Stack para implantar o WordPress no Amazon ECS
 
 Parameters:
+  myKeyPair:
+    Type: AWS::EC2::KeyPair
+    Description: Select a VPC that allows instances to access
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: Select a VPC that allows instances to access the Internet.
@@ -74,15 +77,9 @@ Mappings:
       AMIID: ami-0b68661b29b9e058c
     ap-southeast-2:
       AMIID: ami-00e4b147599c13588
-  
-  ProjectStack:
-    Type: String
-
-  CertificateArn:
-    Type: String
     
 Resources:
-  myKeyPair:
+  KeyPair:
     Type: AWS::EC2::KeyPair
     Properties:
       KeyName: demo
@@ -117,7 +114,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EFS
-      SubnetId: !Select [ 1, !Ref SubnetId ]
+      SubnetId: !Select [1, !Ref SubnetId ]
       SecurityGroups:
         - !Ref EFSMountTargetSG
 
@@ -163,14 +160,14 @@ Resources:
       LogGroupName: !Join 
         - '-'
         - - ECSLogGroup
-          - !Ref 'AWS::ProjectStack'
+          - !Ref 'AWS::StackName'
       RetentionInDays: 14
   taskdefinition:
     Type: 'AWS::ECS::TaskDefinition'
     Properties:
       Family: !Join 
         - ''
-        - - !Ref 'AWS::ProjectStack'
+        - - !Ref 'AWS::StackName'
           - '-ecs-demo-app'
       ContainerDefinitions:
         - Name: simple-app
@@ -266,7 +263,7 @@ Resources:
         - !Ref EcsSecurityGroup
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref EC2InstanceProfile
-      KeyName: !Ref demo
+      KeyName: !Ref myKeyPair
       UserData: !Base64 
         'Fn::Join':
           - ''
@@ -436,8 +433,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId:
-        Fn::ImportValue: !Sub ${ProjectStack}:AWS::Region
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
           - CidrIp: 0.0.0.0/0
             IpProtocol: -1
@@ -450,8 +446,8 @@ Resources:
       - Key: idle_timeout.timeout_seconds
         Value: '30'
       Subnets:
-        - Fn::ImportValue: !Sub ${ProjectStack}:PublicSubnetOne
-        - Fn::ImportValue: !Sub ${ProjectStack}:PublicSubnetTwo
+        - !Sub ${AWS::StackName}:PublicSubnetOne
+        - !Sub ${AWS::StackName}:PublicSubnetTwo
       SecurityGroups: [!Ref 'PublicLoadBalancerSG']
       Type: application
 
@@ -496,8 +492,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
-      VpcId:
-        Fn::ImportValue: !Sub ${ProjectStack}:AWS::Region
+      VpcId: !Ref VpcId
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 60                 
