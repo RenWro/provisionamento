@@ -64,6 +64,13 @@ Foram fornecidos comentários claros no template para explicar a finalidade de c
 
 A pilha foi implantada através do CLI ou do Management Console da AWS, a escolha foi livre.
 
+Foi utilizado o comando para enviar arquivo template e parametros atraves da CLI seguinte: 
+
+
+aws cloudformation deploy --template-file ./ecs-wordpress-stack.yaml --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --parameter-overrides $(cat parametros.env) --stack-name wordpress
+
+
+
 
 
 <h2>Verificação do Ambiente</h2>
